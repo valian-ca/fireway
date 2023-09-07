@@ -25,7 +25,7 @@ export const migrateScript = async ({
 }) => {
   let migrationScript: any;
   try {
-    migrationScript = require(file.path);
+    migrationScript = await import(file.path);
   } catch (e) {
     logger.error(e);
     throw e;
