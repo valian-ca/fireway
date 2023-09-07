@@ -1,0 +1,1 @@
+{"version":3,"file":"IMigrationFunctionsArguments.d.ts","sourceRoot":"","sources":["../../src/types/IMigrationFunctionsArguments.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,GAAG,EAAE,MAAM,oBAAoB,CAAC;AACzC,OAAO,EAAE,SAAS,EAAE,MAAM,0BAA0B,CAAC;AAErD,MAAM,WAAW,4BAA4B;IAC3C,GAAG,EAAE,GAAG,CAAC;IACT,SAAS,EAAE,SAAS,CAAC;CACtB"}
