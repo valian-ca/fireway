@@ -1,5 +1,5 @@
-const ERROR = 2;
-const ALWAYS = 'always';
+const ERROR = 2
+const ALWAYS = 'always'
 
 export default {
   extends: ['@commitlint/config-conventional'],
@@ -13,4 +13,4 @@ export default {
     'footer-leading-blank': [ERROR, ALWAYS],
     'footer-max-line-length': [ERROR, ALWAYS, Number.POSITIVE_INFINITY],
   },
-};
+}

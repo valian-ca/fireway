@@ -5,5 +5,5 @@
     "moduleResolution": "bundler",
     "module": "ESNext"
   },
-  "include": ["src"]
+  "include": ["src", "vitest.config.ts", "tsdown.config.ts"]
 }

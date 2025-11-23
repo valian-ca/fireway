@@ -1,8 +1,8 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    globals: true,
+    globals: false,
     clearMocks: true,
     environment: 'node',
     fileParallelism: false,
@@ -10,12 +10,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: [
-        'src/**/index.ts',
-        'src/**/cli.ts',
-        'src/types/**',
-        'src/__tests__/**',
-      ],
+      exclude: ['src/**/index.ts', 'src/**/cli.ts', 'src/types/**', 'src/__tests__/**'],
     },
   },
-});
+})

@@ -1,4 +1,4 @@
-export async function migrate() {
+module.exports.migrate = () => {
   ;(async () => {
     throw new Error('Some error')
   })()

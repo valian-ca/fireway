@@ -1,3 +1,3 @@
 module.exports.migrate = () => {
-  setTimeout(() => {}, 1000);
-};
+  setTimeout(() => {}, 1000)
+}

@@ -13,13 +13,10 @@ TypeScript example:
 ```ts
 // ./migrations/v0.0.1__typescript_example.ts
 
-import { IMigrationFunctionsArguments } from '@valian/fireway';
+import { IMigrationFunctionsArguments } from '@valian/fireway'
 
 export async function migrate({ firestore }: IMigrationFunctionsArguments) {
-  await firestore
-    .collection('my_table')
-    .doc('document_id')
-    .set({ name: 'Fireway' });
+  await firestore.collection('my_table').doc('document_id').set({ name: 'Fireway' })
 }
 ```
 
@@ -29,11 +26,8 @@ JavaScript example:
 // ./migrations/v0.0.1__javascript_example.js
 
 module.exports.migrate = async ({ firestore }) => {
-  await firestore
-    .collection('my_table')
-    .doc('document_id')
-    .set({ name: 'Fireway' });
-};
+  await firestore.collection('my_table').doc('document_id').set({ name: 'Fireway' })
+}
 ```
 
 ### Extended example
@@ -42,32 +36,29 @@ The library is using [Modular SDK](https://firebase.google.com/docs/web/modular-
 
 ```ts
 // ./migrations/v0.2.0__typescript_extended_example.ts
-import { IMigrationFunctionsArguments } from '@valian/fireway';
-import { getAuth } from 'firebase-admin/auth';
-import { FieldValue } from 'firebase-admin/firestore';
+import { IMigrationFunctionsArguments } from '@valian/fireway'
+import { getAuth } from 'firebase-admin/auth'
+import { FieldValue } from 'firebase-admin/firestore'
 
-export async function migrate({
-  firestore,
-  app,
-}: IMigrationFunctionsArguments) {
+export async function migrate({ firestore, app }: IMigrationFunctionsArguments) {
   // Auth example
-  const firebaseAuth = getAuth(app);
-  const email = 'test-user@test.com';
+  const firebaseAuth = getAuth(app)
+  const email = 'test-user@test.com'
   // search user identity
-  const user = await firebaseAuth.getUserByEmail(email);
+  const user = await firebaseAuth.getUserByEmail(email)
   if (!user) {
     await firebaseAuth.createUser({
       email: email,
       emailVerified: true,
       disabled: false,
-    });
+    })
   }
 
   // FieldValue example
   await firestore.collection('table').doc('123').ref.update({
     obsoleteField: FieldValue.delete(),
     date: FieldValue.serverTimestamp(),
-  });
+  })
 }
 ```
 
