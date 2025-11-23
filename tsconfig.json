@@ -1,31 +1,9 @@
 {
-  "ts-node": {
-    "transpileOnly": true,
-    "compilerOptions": {
-      "module": "CommonJS"
-    }
-  },
+  "extends": "@tsconfig/node22/tsconfig.json",
   "compilerOptions": {
-    "module": "CommonJS",
-    "moduleResolution": "node",
-    "resolveJsonModule": true, // json imports
-    "esModuleInterop": true, // import common modules as ES6 Modules
-    "allowSyntheticDefaultImports": true, // support typesystem compatibility
-    "noImplicitReturns": true,
-    "noUnusedLocals": true,
-    "outDir": "lib",
-    "rootDir": "src",
-    "baseUrl": ".",
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "strict": true,
-    "useUnknownInCatchVariables": true,
-    "target": "ES2020",
-    "allowJs": true,
-    "skipLibCheck": true
+    "noEmit": true,
+    "moduleResolution": "bundler",
+    "module": "ESNext"
   },
-  "compileOnSave": true,
-  "include": ["src"],
-  "exclude": ["**/**/node_modules/**/**", "lib", "tests"]
+  "include": ["src"]
 }

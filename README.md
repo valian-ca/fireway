@@ -13,7 +13,7 @@ TypeScript example:
 ```ts
 // ./migrations/v0.0.1__typescript_example.ts
 
-import { IMigrationFunctionsArguments } from '@dev-aces/fireway';
+import { IMigrationFunctionsArguments } from '@valian/fireway';
 
 export async function migrate({ firestore }: IMigrationFunctionsArguments) {
   await firestore
@@ -42,7 +42,7 @@ The library is using [Modular SDK](https://firebase.google.com/docs/web/modular-
 
 ```ts
 // ./migrations/v0.2.0__typescript_extended_example.ts
-import { IMigrationFunctionsArguments } from '@dev-aces/fireway';
+import { IMigrationFunctionsArguments } from '@valian/fireway';
 import { getAuth } from 'firebase-admin/auth';
 import { FieldValue } from 'firebase-admin/firestore';
 
@@ -76,7 +76,7 @@ export async function migrate({
 1. Install NPM package to Firebase functions projects:
 
    ```bash
-   npm i @dev-aces/fireway
+   npm i @valian/fireway
    ```
 
 For TypeScript additionally:

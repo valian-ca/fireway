@@ -1,7 +1,7 @@
 import { existsSync, promises } from 'fs';
-import path from 'path';
+import path from 'node:path';
 import semver from 'semver';
-import { IMigrationFileMeta } from './types/IMigrationFileMeta';
+import { IMigrationFileMeta } from './types/IMigrationFileMeta.js';
 
 export const getMigrationFiles = async (dir: string) => {
   // Get all the scripts

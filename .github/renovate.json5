@@ -1,0 +1,35 @@
+{
+  extends: ['config:js-lib', 'config:semverAllMonthly', ':semanticCommits'],
+  labels: ['dependencies'],
+  packageRules: [
+    {
+      groupName: 'GitHub Actions Dependencies',
+      matchManagers: ['github-actions'],
+    },
+    {
+      groupName: 'Node-based Dev Tools',
+      matchManagers: ['npm'],
+    },
+    {
+      groupName: 'Node.js',
+      matchPackageNames: ['pnpm'],
+    },
+    {
+      groupName: 'Node.js',
+      matchPackageNames: ['node'],
+      allowedVersions: '<23.0.0',
+    },
+    {
+      groupName: 'main dependencies',
+      matchPackageNames: ['firebase-admin', 'firebase', 'type-fest', 'zod'],
+    },
+    {
+      groupName: 'Tests',
+      matchPackageNames: ['/vitest/'],
+    },
+    {
+      groupName: 'Linters',
+      matchPackageNames: ['/eslint/', '/prettier/', '/commitlint/'],
+    },
+  ],
+}

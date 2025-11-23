@@ -1,0 +1,31 @@
+name: Tests
+
+on:
+  workflow_call:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      PNPM_CONFIG_FROZEN_LOCKFILE: false
+    strategy:
+      fail-fast: false
+      matrix:
+        firebase_admin: ['12', '13']
+    name: tests (firebase-admin@${{ matrix.firebase_admin }})
+    steps:
+      - uses: actions/checkout@v5
+      - name: cache firebase emulator
+        uses: actions/cache@v4
+        with:
+          path: .cache/firebase
+          key: ${{ runner.os }}-firebase-emulator
+
+      - name: setup pnpm
+        uses: valian-ca/github-workflows/.github/actions/setup-pnpm@main
+      - name: Install firebase-admin@^${{ matrix.firebase_admin }}
+        run: pnpm add -Dw firebase-admin@^${{ matrix.firebase_admin }}
+      - name: dedupe
+        run: pnpm dedupe
+      - name: tests
+        run: pnpm test

@@ -1,20 +1,18 @@
 import { App, initializeApp } from 'firebase-admin/app';
 import semver from 'semver';
-import { getMigrationFiles } from './getMigrationFiles';
-import { ConsoleLogger, LogLevelString } from './logger';
+import { getMigrationFiles } from './getMigrationFiles.js';
+import { createLogger, LogLevelString } from './logger/index.js';
 
-import { Firestore, QuerySnapshot } from 'firebase-admin/firestore';
-import { loadRequiredLib } from './loadRequiredLib';
-import { IMigrationResult } from './types/IMigrationResult';
-import { IStatistics } from './types/IStatistics';
-import { proxyWritableMethods } from './proxyWritableMethods';
-import { migrateScript } from './migrateScript';
+import { getFirestore, QuerySnapshot } from 'firebase-admin/firestore';
+import { IMigrationResult } from './types/IMigrationResult.js';
+import { IStatistics } from './types/IStatistics.js';
+import { migrateScript } from './migrateScript.js';
+import { proxyFirestore } from './proxyFirestore.js';
 
 export interface MigrateProps {
   path: string;
   collection?: string;
   dryRun?: boolean;
-  require?: string;
   logLevel?: LogLevelString;
   // might be passed from tests
   app?: App;
@@ -24,15 +22,10 @@ export const migrate = async ({
   path: dir,
   collection = 'fireway',
   dryRun = false,
-  require: requireLibPath,
   logLevel = 'log',
   app,
 }: MigrateProps) => {
-  const logger = new ConsoleLogger(logLevel);
-
-  if (requireLibPath) {
-    loadRequiredLib(requireLibPath, logger);
-  }
+  const logger = createLogger(logLevel);
 
   // might be passed from tests
   if (!app) {
@@ -40,13 +33,13 @@ export const migrate = async ({
   }
 
   const projectId = app.options.projectId ?? process?.env?.GCLOUD_PROJECT;
+
   // Create a new instance of Firestore, so we can override WriteBatch prototypes
-  const firestore = new Firestore({
-    projectId,
-  });
+  let firestore = getFirestore(app);
+  const resultsCollection = firestore.collection(collection);
 
   logger.log(
-    `Running @dev-aces/fireway migrations for projectId: ${projectId ?? ''}`,
+    `Running @valian/fireway migrations for projectId: ${projectId ?? ''}`,
   );
 
   const stats: IStatistics = {
@@ -74,16 +67,11 @@ export const migrate = async ({
     );
   }
 
+  // Always apply the proxy to track statistics
+  // In dryRun mode, it will also prevent actual writes
   if (dryRun) {
     logger.log(`Dry run mode, no records will be touched.`);
   }
-
-  // Extend Firestore instance with the "stats" field,
-  // so it can be used inside proxyWritableMethods
-  (firestore as any).stats = stats;
-  proxyWritableMethods({ logger, dryRun });
-
-  const resultsCollection = firestore.collection(collection);
 
   // Get the latest migration
   const result = (await resultsCollection
@@ -131,20 +119,16 @@ export const migrate = async ({
     const migrationResult = await migrateScript({
       logger,
       app,
-      firestore,
+      firestore: proxyFirestore(firestore, logger, stats, dryRun),
       dryRun,
       installed_rank,
       file,
     });
 
     // Freeze stat tracking
-    stats.frozen = true;
-    try {
-      const id = `v${file.version}__${file.description}`;
+    const id = `v${file.version}__${file.description}`;
+    if (!dryRun) {
       await resultsCollection.doc(id).set(migrationResult);
-    } finally {
-      // Unfreeze stat tracking
-      delete stats.frozen;
     }
 
     if (!migrationResult.success) {

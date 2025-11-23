@@ -1,0 +1,6 @@
+onlyBuiltDependencies:
+  - esbuild
+  - husky
+  - protobufjs
+  - re2
+  - unrs-resolver

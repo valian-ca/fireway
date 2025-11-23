@@ -1,29 +1,42 @@
 #!/usr/bin/env node
 
-import sade from 'sade';
-import { MigrateProps, migrate } from './migrate';
-// @ts-ignore
-import pkg from '../package.json' assert { type: 'json' };
+import { cac } from 'cac';
+import { MigrateProps, migrate } from './migrate.js';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const prog = sade('@dev-aces/fireway').version(pkg.version);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const pkg = JSON.parse(
+  readFileSync(join(__dirname, '../package.json'), 'utf-8'),
+);
 
-prog
-  .command('migrate')
-  .option('--path', 'Path to migration files', './migrations')
+const cli = cac('@valian/fireway');
+cli.version(pkg.version);
+
+cli
+  .command('migrate', 'Migrates schema to the latest version')
+  .option('--path <path>', 'Path to migration files', {
+    default: './migrations',
+  })
   .option(
-    '--collection',
+    '--collection <collection>',
     'Firebase collection name for migration results',
-    'fireway',
+    { default: 'fireway' },
   )
   .option('--dryRun', 'Simulates changes')
-  .option('--require', 'Requires a module before executing')
-  .option('--logLevel', 'Log level, options: debug | log | warn | error', 'log')
-  .describe('Migrates schema to the latest version')
+  .option(
+    '--logLevel <level>',
+    'Log level, options: debug | log | warn | error',
+    {
+      default: 'log',
+    },
+  )
   .example('migrate')
   .example('migrate --path=./my-migrations')
   .example('migrate --collection=fireway')
   .example('migrate --dryRun')
-  .example('migrate --require="ts-node/register"')
   .example('migrate --logLevel=debug')
   .action(async (opts: MigrateProps) => {
     try {
@@ -34,4 +47,5 @@ prog
     }
   });
 
-prog.parse(process.argv);
+cli.help();
+cli.parse();
