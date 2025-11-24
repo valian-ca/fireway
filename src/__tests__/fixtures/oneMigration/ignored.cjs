@@ -1,1 +1,1 @@
-// esl
+module.exports.noop = () => {}

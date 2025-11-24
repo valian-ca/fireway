@@ -18,7 +18,3 @@ export const createLogger = (level: LogLevelString = 'log'): ConsolaInstance =>
   createConsola({
     level: logLevelMap[level],
   })
-
-// Export the default consola instance
-
-export { type ConsolaInstance as ILogger } from 'consola'
