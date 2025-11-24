@@ -18,21 +18,24 @@ export type MigrateProps = {
   app?: App
 }
 
+const envProjectId = process.env.GCLOUD_PROJECT ?? process.env.GOOGLE_CLOUD_PROJECT
+
 export const runMigratations = async ({
   path: migrationPath,
   collection = 'fireway',
   dryRun = false,
   logLevel = 'log',
-  app = initializeApp(),
+  app = initializeApp(
+    envProjectId
+      ? {
+          projectId: envProjectId,
+        }
+      : {},
+  ),
 }: MigrateProps) => {
   const logger = createLogger(logLevel)
 
-  const projectId = app.options.projectId ?? process.env.GCLOUD_PROJECT
-
-  // Create a new instance of Firestore, so we can override WriteBatch prototypes
-  const firestore = getFirestore(app)
-
-  logger.log(`Running @valian/fireway migrations for projectId: ${projectId ?? ''}`)
+  logger.log(`Running @valian/fireway migrations for projectId: ${app.options.projectId}`)
   const files = getMigrationFiles(migrationPath)
 
   const stats: IStatistics = {
@@ -49,15 +52,16 @@ export const runMigratations = async ({
     logger.log(`No migration files found at "${migrationPath}".`)
     return stats
   }
+
   logger.debug(
     `Found ${stats.scannedFiles} migration file${stats.scannedFiles === 1 ? '' : 's'} at "${migrationPath}".`,
   )
 
-  // Always apply the proxy to track statistics
-  // In dryRun mode, it will also prevent actual writes
   if (dryRun) {
     logger.log(`Dry run mode, no records will be touched.`)
   }
+
+  const firestore = getFirestore(app)
 
   // Get the latest migration
   const result = await firestore
