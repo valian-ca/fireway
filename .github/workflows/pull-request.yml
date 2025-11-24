@@ -1,0 +1,51 @@
+name: Pull Request
+on:
+  pull_request:
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: setup pnpm
+        uses: valian-ca/github-workflows/.github/actions/setup-pnpm@main
+      - name: eslint
+        run: pnpm eslint
+      - name: prettier
+        run: pnpm prettier
+      - name: publint
+        run: pnpm lint:publint
+
+  type-check:
+    runs-on: ubuntu-latest
+    env:
+      PNPM_CONFIG_FROZEN_LOCKFILE: false
+    strategy:
+      fail-fast: false
+      matrix:
+        firebase_admin: ['12', '13']
+    name: type check (firebase-admin@${{ matrix.firebase_admin }})
+    steps:
+      - uses: actions/checkout@v5
+      - name: setup pnpm
+        uses: valian-ca/github-workflows/.github/actions/setup-pnpm@main
+      - name: Install firebase-admin@^${{ matrix.firebase_admin }}
+        run: pnpm add -Dw firebase-admin@^${{ matrix.firebase_admin }}
+      - name: dedupe
+        run: pnpm dedupe
+      - name: type-check
+        run: pnpm run type-check
+
+  tests:
+    uses: ./.github/workflows/tests.yml
+    secrets: inherit
+
+  markdown:
+    name: markdown lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: DavidAnson/markdownlint-cli2-action@v21
+        with:
+          globs: '**/*.md'

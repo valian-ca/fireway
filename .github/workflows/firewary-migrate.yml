@@ -1,0 +1,66 @@
+name: fireway migrate
+
+on:
+  workflow_call:
+    inputs:
+      workload-identity-project-number:
+        description: the GCP project number used for Workload Identity Federation
+        required: true
+        type: string
+      gcp-project-id:
+        description: The firebase project environment used for the deployment
+        required: true
+        type: string
+      gcp-service-account:
+        description: the email address of the service account
+        required: true
+        type: string
+      working-directory:
+        description: The working directory of the firebase project
+        required: false
+        type: string
+      dry-run:
+        description: run migrations in dry-run mode
+        type: boolean
+        required: false
+        default: false
+
+jobs:
+  fireway:
+    name: fireway
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: fireway-migrate-${{ inputs.gcp-project-id }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: setup pnpm
+        uses: valian-ca/github-workflows/.github/actions/setup-pnpm@main
+      - uses: valian-ca/github-workflows/.github/actions/gcp-github-auth@main
+        with:
+          workload-identity-project-number: ${{ inputs.workload-identity-project-number }}
+          gcp-service-account: ${{ inputs.gcp-service-account }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+        with:
+          project_id: ${{ inputs.gcp-project-id }}
+
+      - name: configure firebase environment
+        run: pnpm exec firebase use ${{ inputs.gcp-project-id }}
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: run migrations - dry run
+        env:
+          GCLOUD_PROJECT: ${{ inputs.gcp-project-id }}
+        if: ${{ inputs.dry-run }}
+        run: pnpm exec fireway migrate --dryRun
+        working-directory: ${{ inputs.working-directory }}
+
+      - name: run migrations
+        env:
+          GCLOUD_PROJECT: ${{ inputs.gcp-project-id }}
+        if: ${{ ! inputs.dry-run }}
+        run: pnpm exec fireway migrate
+        working-directory: ${{ inputs.working-directory }}

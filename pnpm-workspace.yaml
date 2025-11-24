@@ -1,0 +1,8 @@
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - '@valian/eslint-config'
+  - esbuild
+  - husky
+  - protobufjs
+  - re2
+  - unrs-resolver

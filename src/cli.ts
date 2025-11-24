@@ -1,37 +1,38 @@
 #!/usr/bin/env node
 
-import sade from 'sade';
-import { MigrateProps, migrate } from './migrate';
-// @ts-ignore
-import pkg from '../package.json' assert { type: 'json' };
+import { cac } from 'cac'
 
-const prog = sade('@dev-aces/fireway').version(pkg.version);
+import pkg from '../package.json'
 
-prog
-  .command('migrate')
-  .option('--path', 'Path to migration files', './migrations')
-  .option(
-    '--collection',
-    'Firebase collection name for migration results',
-    'fireway',
-  )
+import { type MigrateProps, runMigratations } from './run-migrations.js'
+
+const cli = cac('fireway')
+cli.version(pkg.version)
+
+cli
+  .command('migrate', 'Migrates schema to the latest version')
+  .option('--path <path>', 'Path to migration files', {
+    default: './migrations',
+  })
+  .option('--collection <collection>', 'Firebase collection name for migration results', { default: 'fireway' })
   .option('--dryRun', 'Simulates changes')
-  .option('--require', 'Requires a module before executing')
-  .option('--logLevel', 'Log level, options: debug | log | warn | error', 'log')
-  .describe('Migrates schema to the latest version')
+  .option('--logLevel <level>', 'Log level, options: debug | log | warn | error', {
+    default: 'log',
+  })
   .example('migrate')
   .example('migrate --path=./my-migrations')
   .example('migrate --collection=fireway')
   .example('migrate --dryRun')
-  .example('migrate --require="ts-node/register"')
   .example('migrate --logLevel=debug')
   .action(async (opts: MigrateProps) => {
     try {
-      await migrate(opts);
-    } catch (e: any) {
-      console.error('ERROR:', e.message);
-      process.exit(1);
+      await runMigratations(opts)
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('ERROR:', error)
+      process.exit(1)
     }
-  });
+  })
 
-prog.parse(process.argv);
+cli.help()
+cli.parse()

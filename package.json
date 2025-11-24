@@ -1,8 +1,27 @@
 {
-  "name": "@dev-aces/fireway",
-  "version": "2.0.1",
+  "name": "@valian/fireway",
+  "version": "1.0.0",
+  "type": "module",
   "description": "A schema migration tool for Firestore",
-  "types": "lib/index.d.ts",
+  "author": {
+    "name": "Valian",
+    "url": "https://valian.ca",
+    "organization": true
+  },
+  "contributors": [
+    {
+      "name": "Julien Marcil",
+      "email": "julien@valian.ca"
+    },
+    {
+      "name": "Artur Ampilogov"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/valian-ca/fireway.git"
+  },
+  "types": "lib/index.d.mts",
   "keywords": [
     "schema",
     "migration",
@@ -11,55 +30,63 @@
   ],
   "files": [
     "/lib",
-    "/src",
     "LICENSE",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
-  "main": "lib/index.js",
-  "bin": {
-    "fireway": "lib/cli.js"
+  "main": "lib/index.mjs",
+  "exports": {
+    ".": "./lib/index.mjs",
+    "./package.json": "./package.json"
   },
-  "repository": "git@github.com:dev-aces/fireway.git",
-  "author": "Artur Ampilogov",
+  "bin": {
+    "fireway": "lib/cli.mjs"
+  },
   "license": "MIT",
   "scripts": {
-    "clean": "rimraf ./lib",
-    "build": "npm run clean && tsc",
-    "setup": "firebase setup:emulators:firestore",
-    "emulator": "firebase emulators:start --only firestore",
-    "test-runner": "node tests",
+    "build": "tsdown",
+    "prepack": "tsdown",
+    "prepare": "husky",
+    "eslint": "eslint .",
+    "prettier": "prettier --check .",
+    "lint:md": "markdownlint-cli2 .",
+    "lint:publint": "pnpm build && publint",
+    "emulator": "firebase emulators:start --only firestore --project demo-fireway",
     "pretest": "mkdir -p tests/emptyMigration",
-    "test": "GCLOUD_PROJECT=test FIRESTORE_EMULATOR_HOST=0.0.0.0:8181 start-test emulator tcp:8181 test-runner",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
-  },
-  "husky": {
-    "hooks": {
-      "pre-push": "npm run format && npm run build && npm test"
-    }
+    "test": "firebase emulators:exec --only firestore --project demo-fireway 'vitest run --coverage'",
+    "type-check": "tsc",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
-    "firebase-admin": ">=10"
+    "firebase-admin": ">=12"
   },
   "dependencies": {
-    "md5": "^2.3.0",
-    "sade": "^1.8.1",
-    "semver": "^7.5.0"
+    "cac": "^6.7.14",
+    "consola": "^3.4.2",
+    "jiti": "^2.6.1",
+    "semver": "^7.7.3",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^2.0.7",
-    "@types/md5": "^2.3.2",
-    "@types/node": "^14.18.16",
-    "@types/semver": "^7.3.13",
-    "capture-console": "^1.0.1",
-    "firebase": "^9.21.0",
-    "firebase-admin": "^11.7.0",
-    "firebase-tools": "^11.29.1",
-    "husky": "^4.2.5",
-    "prettier": "^2.8.8",
-    "rimraf": "^5.0.0",
-    "start-server-and-test": "^1.14.0",
-    "tape": "^4.13.2",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.9.5"
-  }
+    "@commitlint/cli": "20.1.0",
+    "@commitlint/config-conventional": "20.0.0",
+    "@tsconfig/node22": "22.0.5",
+    "@types/node": "24.10.1",
+    "@types/semver": "7.7.1",
+    "@valian/eslint-config": "2.0.4",
+    "@vitest/coverage-v8": "4.0.13",
+    "eslint": "9.39.1",
+    "firebase-admin": "13.6.0",
+    "firebase-functions-test": "3.4.1",
+    "firebase-tools": "14.26.0",
+    "husky": "9.1.7",
+    "markdownlint-cli2": "0.19.1",
+    "nanoid": "5.1.6",
+    "prettier": "3.6.2",
+    "publint": "0.3.15",
+    "tsdown": "0.16.6",
+    "typescript": "5.9.3",
+    "vitest": "4.0.13"
+  },
+  "packageManager": "pnpm@10.20.0"
 }

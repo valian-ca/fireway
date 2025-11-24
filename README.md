@@ -1,73 +1,78 @@
 # Fireway
 
 A schema migration tool for Firestore.
-TypeScript and CommonJS JavaScript languages are supported.
+TypeScript, ESM JavaScript (`.mjs`), and CommonJS JavaScript (`.cjs`) are supported.
 
 ## Usage
 
 Create a migration file in the `functions/migration` (default directory).  
-Name the file in the format: `v[semver]__[description].ts` (or `.js`).
+Name the file in the format: `v[semver]__[description].ts` (TypeScript),
+`.mjs` (ESM JavaScript), or `.cjs` (CommonJS JavaScript).
 
 TypeScript example:
 
 ```ts
 // ./migrations/v0.0.1__typescript_example.ts
 
-import { IMigrationFunctionsArguments } from '@dev-aces/fireway';
+import { type IMigrationFunctionsArguments } from '@valian/fireway'
 
 export async function migrate({ firestore }: IMigrationFunctionsArguments) {
-  await firestore
-    .collection('my_table')
-    .doc('document_id')
-    .set({ name: 'Fireway' });
+  await firestore.collection('my_table').doc('document_id').set({ name: 'Fireway' })
 }
 ```
 
-JavaScript example:
+ESM JavaScript example:
 
 ```js
-// ./migrations/v0.0.1__javascript_example.js
+// ./migrations/v0.0.1__javascript_example.mjs
+
+export const migrate = async ({ firestore }) => {
+  await firestore.collection('my_table').doc('document_id').set({ name: 'Fireway' })
+}
+```
+
+CommonJS JavaScript example:
+
+```js
+// ./migrations/v0.0.1__javascript_example.cjs
 
 module.exports.migrate = async ({ firestore }) => {
-  await firestore
-    .collection('my_table')
-    .doc('document_id')
-    .set({ name: 'Fireway' });
-};
+  await firestore.collection('my_table').doc('document_id').set({ name: 'Fireway' })
+}
 ```
 
 ### Extended example
 
-The library is using [Modular SDK](https://firebase.google.com/docs/web/modular-upgrade) for app initialization. It is possible to use the `app` argument in migration scripts to initialize another Firebase service, for example, `auth`.
+The library is using
+[Modular SDK](https://firebase.google.com/docs/web/modular-upgrade) for app
+initialization. It is possible to use the `app` argument in migration scripts
+to initialize another Firebase service, for example, `auth`.
 
 ```ts
 // ./migrations/v0.2.0__typescript_extended_example.ts
-import { IMigrationFunctionsArguments } from '@dev-aces/fireway';
-import { getAuth } from 'firebase-admin/auth';
-import { FieldValue } from 'firebase-admin/firestore';
+import { type IMigrationFunctionsArguments } from '@valian/fireway'
+import { getAuth } from 'firebase-admin/auth'
+import { FieldValue } from 'firebase-admin/firestore'
 
-export async function migrate({
-  firestore,
-  app,
-}: IMigrationFunctionsArguments) {
+export async function migrate({ firestore, app }: IMigrationFunctionsArguments) {
   // Auth example
-  const firebaseAuth = getAuth(app);
-  const email = 'test-user@test.com';
+  const firebaseAuth = getAuth(app)
+  const email = 'test-user@test.com'
   // search user identity
-  const user = await firebaseAuth.getUserByEmail(email);
+  const user = await firebaseAuth.getUserByEmail(email)
   if (!user) {
     await firebaseAuth.createUser({
       email: email,
       emailVerified: true,
       disabled: false,
-    });
+    })
   }
 
   // FieldValue example
   await firestore.collection('table').doc('123').ref.update({
     obsoleteField: FieldValue.delete(),
     date: FieldValue.serverTimestamp(),
-  });
+  })
 }
 ```
 
@@ -76,35 +81,21 @@ export async function migrate({
 1. Install NPM package to Firebase functions projects:
 
    ```bash
-   npm i @dev-aces/fireway
+   npm i @valian/fireway
    ```
 
-For TypeScript additionally:
-
-2. Install [`ts-node`](https://www.npmjs.com/package/ts-node):
-
-   ```bash
-   npm i ts-node
-   ```
-
-3. Add `tsconfig.json` to the `functions` folder. Define a `ts-node` configuration block inside your `tsconfig.json` file:
-
-   ```json
-   {
-     "ts-node": {
-       "transpileOnly": true,
-       "compilerOptions": {
-         "module": "commonjs"
-       }
-     }
-   }
-   ```
+Fireway uses [`jiti`](https://github.com/unjs/jiti) to automatically handle
+TypeScript, ESM, and CommonJS migration files, so no additional configuration
+is required for TypeScript support.
 
 ## Running locally
 
-Most likely you'll want to test your migration scripts _locally_ first before running them against Cloud instances.
+Most likely you'll want to test your migration scripts _locally_ first before
+running them against Cloud instances.
 
-1. Ensure that [Firestore emulator](https://firebase.google.com/docs/emulator-suite/connect_firestore) is set up in `firebase.json` file.
+1. Ensure that
+   [Firestore emulator](https://firebase.google.com/docs/emulator-suite/connect_firestore)
+   is set up in `firebase.json` file.
 
    ```json
    {
@@ -124,24 +115,24 @@ Most likely you'll want to test your migration scripts _locally_ first before ru
 
 3. Run migrations.
 
-   To connect to the local emulator `GCLOUD_PROJECT` environment variable is required pointing to your projectId. Check `.firebaserc` file and the `{ "projects": { "default": "[project-id]" }}` settings. If it is not specified, any value can be provided, e.g. "local".  
-   Specify `FIRESTORE_EMULATOR_HOST` variable pointing to your local emulator (default Firestore port is `8080`).
-
-   For TypeScript:
-
-   ```bash
-   GCLOUD_PROJECT=project-id FIRESTORE_EMULATOR_HOST=localhost:8080 fireway --require="ts-node/register" migrate
-   ```
-
-   For JavaScript:
+   To connect to the local emulator `GCLOUD_PROJECT` environment variable is
+   required pointing to your projectId. Check `.firebaserc` file and the
+   `{ "projects": { "default": "[project-id]" }}` settings. If it is not
+   specified, any value can be provided, e.g. "local".  
+   Specify `FIRESTORE_EMULATOR_HOST` variable pointing to your local emulator
+   (default Firestore port is `8080`).
 
    ```bash
    GCLOUD_PROJECT=project-id FIRESTORE_EMULATOR_HOST=localhost:8080 fireway migrate
    ```
 
+   Fireway automatically handles TypeScript, ESM (`.mjs`), and CommonJS
+   (`.cjs`) files without any additional configuration.
+
 ## Migration results
 
-Migration results are stored in the `fireway` collection (can be changed) in `Firestore` in the format `v[semver]__[description]`.
+Migration results are stored in the `fireway` collection (can be changed) in
+`Firestore` in the format `v[semver]__[description]`.
 
 ```js
 // fireway/v0.0.1__typescript_example
@@ -154,7 +145,7 @@ Migration results are stored in the `fireway` collection (can be changed) in `Fi
   installed_by: 'system_user_name',
   installed_on: Timestamp(),
   script: 'v0.0.1__typescript_example.ts',
-  type: 'ts',
+  type: 'ts', // or 'mjs' for ESM, 'cjs' for CommonJS
   version: '0.0.1',
   success: true
 }
@@ -162,18 +153,20 @@ Migration results are stored in the `fireway` collection (can be changed) in `Fi
 
 ## Re-running script
 
-If script execution failed, the workflow will be stopped. Running migration again will start from the latest failed script.
+If script execution failed, the workflow will be stopped. Running migration
+again will start from the latest failed script.
 
-## Running in Cloud
-
-1. Generate a Firebase Service Account JSON key by opening: Project Settings -> Service Accounts -> Generate new private key. Private key will have the admin role and contain your project settings.
+1. Generate a Firebase Service Account JSON key by opening: Project Settings
+   -> Service Accounts -> Generate new private key. Private key will have the
+   admin role and contain your project settings.
 
 2. Set up CI provider to use that key.
    For Github Actions, add a secret to the Github repository, e.g. `FIREBASE_SERVICE_ACCOUNT_JSON_DEV`.
 
-   In the Github workflow use `google-github-actions/auth@v1` to load the credentials
+   In the Github workflow use `google-github-actions/auth@v1` to load the
+   credentials
 
-   ```
+   ```yaml
    jobs:
      build_and_deploy:
        runs-on: ubuntu-latest
@@ -197,11 +190,13 @@ If script execution failed, the workflow will be stopped. Running migration agai
 
    where `package.json` scripts section has:
 
-   ```
-   "migrate": "fireway migrate --require=\"ts-node/register\""
+   ```json
+   "migrate": "fireway migrate"
    ```
 
-Alternatively use `GOOGLE_APPLICATION_CREDENTIALS` environment variable as described in [Firebase Admin Auth instructions](https://firebase.google.com/docs/admin/setup#initialize_the_sdk_in_non-google_environments).
+Alternatively use `GOOGLE_APPLICATION_CREDENTIALS` environment variable as
+described in
+[Firebase Admin Auth instructions](https://firebase.google.com/docs/admin/setup#initialize_the_sdk_in_non-google_environments).
 
 ## CLI
 
@@ -218,7 +213,6 @@ For more info, run any command with the `--help` flag
 Options
   --path           Path to migration files  (default "./migrations")
   --collection     Firebase collection name for migration results (default "fireway")
-  --require        Requires a module before executing, example with TypeScript compiler: fireway migrate --require="ts-node/register"
   --dryRun         Simulates changes
   --logLevel       Log level, options: debug, log, warn, error (default "log")
   -v, --version    Displays current version
@@ -230,14 +224,14 @@ Options
 Fork the repository, make changes, ensure that project is tested:
 
 ```bash
-$ npm install
-$ npm setup
-$ npm run build && npm run test
+pnpm install
+npm run build && pnpm run test
 ```
 
 ## History
 
-Based on [kevlened/fireway](https://github.com/kevlened/fireway) work, which was inspired by [flyway](https://flywaydb.org/)
+Based on [ace-devs/fireway](https://github.com/dev-aces/fireway) work, which
+was inspired by [kevlened/fireway](https://github.com/kevlened/fireway)
 
 ## License
 
