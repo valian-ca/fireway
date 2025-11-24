@@ -24,6 +24,10 @@ on:
         type: boolean
         required: false
         default: false
+      slack-channel-id:
+        description: Slack channel id to send alerts to
+        type: string
+        required: false
 
 jobs:
   fireway:
@@ -48,19 +52,30 @@ jobs:
           project_id: ${{ inputs.gcp-project-id }}
 
       - name: configure firebase environment
-        run: pnpm exec firebase use ${{ inputs.gcp-project-id }}
+        run: npx firebase use ${{ inputs.gcp-project-id }}
         working-directory: ${{ inputs.working-directory }}
 
       - name: run migrations - dry run
         env:
           GCLOUD_PROJECT: ${{ inputs.gcp-project-id }}
         if: ${{ inputs.dry-run }}
-        run: pnpm exec fireway migrate --dryRun
+        run: npx @valian/fireway migrate --dryRun
         working-directory: ${{ inputs.working-directory }}
 
       - name: run migrations
         env:
           GCLOUD_PROJECT: ${{ inputs.gcp-project-id }}
         if: ${{ ! inputs.dry-run }}
-        run: pnpm exec fireway migrate
+        run: npx @valian/fireway migrate
         working-directory: ${{ inputs.working-directory }}
+
+      - name: notify Slack of failure
+        id: slack
+        if: ${{ !success() && inputs.slack-channel-id != '' }}
+        uses: valian-ca/github-workflows/.github/actions/slack-alert@main
+        with:
+          message: fireway migrate ${{ inputs.gcp-project-id }} error
+          mrkdwn: |
+            :warning: fireway migrate *${{ inputs.gcp-project-id }}* (`${{ job.status }}`)
+          token: ${{ secrets.SLACK_BOT_TOKEN }}
+          channel: ${{ inputs.slack-channel-id }}
