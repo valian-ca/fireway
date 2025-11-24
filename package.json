@@ -43,6 +43,9 @@
     "fireway": "lib/cli.mjs"
   },
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "prepack": "tsdown",
