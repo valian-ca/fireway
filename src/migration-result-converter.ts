@@ -30,10 +30,7 @@ export const migrationResultConverter: FirestoreDataConverter<z.infer<typeof Mig
     return MigrationResultZod.parse(snapshot.data())
   },
 
-  toFirestore(model: z.infer<typeof MigrationResultZod>) {
-    return {
-      ...model,
-      installed_on: model.installed_on instanceof Date ? Timestamp.fromDate(model.installed_on) : model.installed_on,
-    }
+  toFirestore(model: z.input<typeof MigrationResultZod>) {
+    return model
   },
 }

@@ -301,6 +301,22 @@ describe('batch: migration count', () => {
       added: 0,
     })
   })
+
+  it('should execute batch operations in real mode', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/batchRealModeMigration`,
+      app,
+    })
+
+    expect(stats.created).toBe(1)
+    expect(stats.set).toBeGreaterThanOrEqual(1)
+    expect(stats.updated).toBeGreaterThanOrEqual(1)
+    expect(stats.deleted).toBeGreaterThanOrEqual(1)
+
+    // Verify the operations were actually committed
+    const testSnapshot = await firestore.collection('test').get()
+    expect(testSnapshot.size).toBeGreaterThan(0)
+  })
 })
 
 describe('all methods', () => {
@@ -389,5 +405,173 @@ describe('TypeScript', () => {
       }
     `,
     )
+  })
+})
+
+describe('get-migration-files: edge cases', () => {
+  it('should handle relative paths', async () => {
+    const stats = await runMigratations({
+      path: 'src/__tests__/fixtures/oneMigration',
+      app,
+    })
+    expect(stats.scannedFiles).toBe(1)
+  })
+
+  it('should throw error for non-existent directory', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/nonExistentDirectory`,
+        app,
+      }),
+    ).rejects.toThrow(/No directory at/)
+  })
+
+  it('should throw error for migration without description', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/noDescriptionMigration`,
+        app,
+      }),
+    ).rejects.toThrow(/please provide description for/)
+  })
+
+  it('should throw error for duplicate versions', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/duplicateVersionMigration`,
+        app,
+      }),
+    ).rejects.toThrow(/have the same version/)
+  })
+
+  it('should throw error for invalid version with description', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/invalidVersionMigration`,
+        app,
+      }),
+    ).rejects.toThrow(/please provide semver for/)
+  })
+})
+
+describe('run-migration: edge cases', () => {
+  it('should throw error when migration has no migrate function', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/noMigrateFunctionMigration`,
+        app,
+      }),
+    ).rejects.toThrow(/must export a migrate function/)
+  })
+
+  it('should handle import errors gracefully', async () => {
+    await expect(
+      runMigratations({
+        path: `${import.meta.dirname}/fixtures/importErrorMigration`,
+        app,
+      }),
+    ).rejects.toThrow(/Error importing migration file/)
+  })
+})
+
+describe('proxy-firestore: comprehensive coverage', () => {
+  it('should track all proxy operations', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/proxyTestMigration`,
+      app,
+    })
+
+    expect(stats.added).toBeGreaterThan(0)
+    expect(stats.created).toBeGreaterThan(0)
+    expect(stats.set).toBeGreaterThan(0)
+    expect(stats.updated).toBeGreaterThan(0)
+    expect(stats.deleted).toBeGreaterThan(0)
+
+    const snapshot = await firestore.collection('fireway').get()
+    const testSnapshot = await firestore.collection('test').get()
+    expect(snapshot.size).toBe(1)
+    expect(testSnapshot.size).toBeGreaterThan(0)
+  })
+
+  it('should track operations in dry run mode', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/proxyTestMigration`,
+      dryRun: true,
+      app,
+    })
+
+    expect(stats.added).toBeGreaterThan(0)
+    expect(stats.created).toBeGreaterThan(0)
+    expect(stats.set).toBeGreaterThan(0)
+    expect(stats.updated).toBeGreaterThan(0)
+    expect(stats.deleted).toBeGreaterThan(0)
+
+    // In dry run mode, nothing should be persisted
+    const testSnapshot = await firestore.collection('test').get()
+    expect(testSnapshot.size).toBe(0)
+  })
+
+  it('should handle nested collections and proxy chains', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/nonFunctionProxyMigration`,
+      app,
+    })
+
+    expect(stats.executedFiles).toBe(1)
+    const nestedSnapshot = await firestore.collection('test').doc('parent').collection('nested').get()
+    expect(nestedSnapshot.size).toBe(1)
+  })
+
+  it('should handle non-function properties and real operations', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/proxyNonFunctionMigration`,
+      app,
+    })
+
+    expect(stats.executedFiles).toBe(1)
+    expect(stats.added).toBeGreaterThan(0)
+    expect(stats.created).toBeGreaterThan(0)
+    expect(stats.set).toBeGreaterThan(0)
+    expect(stats.updated).toBeGreaterThan(0)
+    expect(stats.deleted).toBeGreaterThan(0)
+
+    // Verify real operations were persisted
+    const testSnapshot = await firestore.collection('test').get()
+    expect(testSnapshot.size).toBeGreaterThan(0)
+  })
+
+  it('should handle edge cases with non-proxied return types', async () => {
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/proxyEdgeCasesMigration`,
+      app,
+    })
+
+    expect(stats.executedFiles).toBe(1)
+  })
+})
+
+describe('run-migrations: database up to date', () => {
+  it('should display "database is up to date" message when no new migrations', async () => {
+    // Run migrations once
+    await runMigratations({
+      path: `${import.meta.dirname}/fixtures/oneMigration`,
+      app,
+    })
+
+    // Run migrations again (database should be up to date)
+    const stats = await runMigratations({
+      path: `${import.meta.dirname}/fixtures/oneMigration`,
+      app,
+    })
+
+    expect(stats).toEqual({
+      scannedFiles: 1,
+      executedFiles: 0,
+      created: 0,
+      set: 0,
+      updated: 0,
+      deleted: 0,
+      added: 0,
+    })
   })
 })

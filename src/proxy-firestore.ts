@@ -4,9 +4,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable no-param-reassign */
+import { type ConsolaInstance } from 'consola'
 import { CollectionReference, DocumentReference, type Firestore, WriteBatch } from 'firebase-admin/firestore'
 
-import { type ILogger } from './logger'
 import { type IStatistics } from './types'
 
 /**
@@ -19,7 +19,12 @@ import { type IStatistics } from './types'
  * @param dryRun - If true, prevents actual writes; if false, allows real writes while tracking stats
  * @returns A proxied Firestore instance
  */
-export const proxyFirestore = (firestore: Firestore, logger: ILogger, stats: IStatistics, dryRun = false): Firestore =>
+export const proxyFirestore = (
+  firestore: Firestore,
+  logger: ConsolaInstance,
+  stats: IStatistics,
+  dryRun = false,
+): Firestore =>
   new Proxy(firestore, {
     get(target, prop, receiver) {
       const original = Reflect.get(target, prop, receiver)
@@ -57,7 +62,7 @@ export const proxyFirestore = (firestore: Firestore, logger: ILogger, stats: ISt
 /**
  * Proxies a WriteBatch to track operations and optionally prevent execution
  */
-function proxyWriteBatch(batch: WriteBatch, logger: ILogger, stats: IStatistics, dryRun: boolean): WriteBatch {
+function proxyWriteBatch(batch: WriteBatch, logger: ConsolaInstance, stats: IStatistics, dryRun: boolean): WriteBatch {
   return new Proxy(batch, {
     get(target, prop, receiver) {
       const original = Reflect.get(target, prop, receiver)
@@ -134,7 +139,7 @@ function proxyWriteBatch(batch: WriteBatch, logger: ILogger, stats: IStatistics,
  */
 function proxyCollectionReference(
   collection: CollectionReference,
-  logger: ILogger,
+  logger: ConsolaInstance,
   stats: IStatistics,
   dryRun: boolean,
 ): CollectionReference {
@@ -186,7 +191,7 @@ function proxyCollectionReference(
  */
 function proxyDocumentReference(
   doc: DocumentReference,
-  logger: ILogger,
+  logger: ConsolaInstance,
   stats: IStatistics,
   dryRun: boolean,
 ): DocumentReference {
