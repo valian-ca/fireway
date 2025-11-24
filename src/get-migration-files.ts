@@ -36,7 +36,7 @@ export const getMigrationFiles = (dir: string) => {
     if (!coerced) {
       if (description) {
         throw new Error(
-          `This filename doesn't match the required format 'v0.0.0__description', please provide semver for: ${filename}`
+          `This filename doesn't match the required format 'v0.0.0__description', please provide semver for: ${filename}`,
         )
       }
       return []
@@ -45,7 +45,7 @@ export const getMigrationFiles = (dir: string) => {
     // If there's a version, but no description, we have an issue
     if (!description) {
       throw new Error(
-        `This filename doesn't match the required format 'v0.0.0__description', please provide description for: ${filename}`
+        `This filename doesn't match the required format 'v0.0.0__description', please provide description for: ${filename}`,
       )
     }
 

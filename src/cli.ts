@@ -6,7 +6,7 @@ import pkg from '../package.json'
 
 import { type MigrateProps, runMigratations } from './run-migrations.js'
 
-const cli = cac('@valian/fireway')
+const cli = cac('fireway')
 cli.version(pkg.version)
 
 cli

@@ -1,14 +1,14 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
-import { userInfo } from 'node:os'
+import os from 'node:os'
 import path from 'node:path'
 
-import { type ConsolaInstance } from 'consola'
+import { consola, type ConsolaInstance } from 'consola'
 import { type App } from 'firebase-admin/app'
 import { type Firestore } from 'firebase-admin/firestore'
 import { createJiti } from 'jiti'
-import md5 from 'md5'
 
-import { type MigrationResult } from './migration-converter'
+import { type MigrationResult } from './migration-result-converter'
 import { type IMigrationFileMeta, type IMigrationSource } from './types'
 
 const jiti = createJiti(import.meta.url)
@@ -20,6 +20,7 @@ const importMigrationFile = async (filePath: string) => {
       }
     >(filePath)
   } catch (error) {
+    consola.error(`Error importing migration file ${filePath}`, error)
     throw new Error(`Error importing migration file ${filePath}`, {
       cause: error,
     })
@@ -27,6 +28,7 @@ const importMigrationFile = async (filePath: string) => {
 }
 
 export const runMigration = async ({
+  path: migrationPath,
   logger,
   file,
   app,
@@ -34,6 +36,7 @@ export const runMigration = async ({
   dryRun,
   installed_rank,
 }: {
+  path: string
   logger: ConsolaInstance
   file: IMigrationFileMeta
   app: App
@@ -41,7 +44,7 @@ export const runMigration = async ({
   dryRun: boolean
   installed_rank: number
 }) => {
-  const migration = await importMigrationFile(file.path)
+  const migration = await importMigrationFile(path.resolve('.', migrationPath, file.filename))
   const migrationScript = migration.migrate ?? migration.default?.migrate ?? migration.default
 
   if (!migrationScript || typeof migrationScript !== 'function') {
@@ -73,8 +76,8 @@ export const runMigration = async ({
     version: file.version,
     script: file.filename,
     type: path.extname(file.filename).slice(1),
-    checksum: md5(fs.readFileSync(file.path, 'utf8')),
-    installed_by: userInfo().username,
+    checksum: crypto.createHash('sha256').update(fs.readFileSync(file.path, 'utf8')).digest('hex'),
+    installed_by: os.userInfo().username,
     installed_on: start,
     execution_time: finish.getTime() - start.getTime(),
     success,

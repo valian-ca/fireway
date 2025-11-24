@@ -136,7 +136,7 @@ function proxyCollectionReference(
   collection: CollectionReference,
   logger: ILogger,
   stats: IStatistics,
-  dryRun: boolean
+  dryRun: boolean,
 ): CollectionReference {
   return new Proxy(collection, {
     get(target, prop, receiver) {
@@ -188,7 +188,7 @@ function proxyDocumentReference(
   doc: DocumentReference,
   logger: ILogger,
   stats: IStatistics,
-  dryRun: boolean
+  dryRun: boolean,
 ): DocumentReference {
   return new Proxy(doc, {
     get(target, prop, receiver) {

@@ -6,7 +6,7 @@ import * as z from 'zod'
  * Accepts both Date objects and Firestore Timestamp-like objects
  */
 export const MigrationResultZod = z.object({
-  installed_rank: z.number().int(),
+  installed_rank: z.int(),
   description: z.string(),
   version: z.string(),
   script: z.string(),
@@ -25,7 +25,7 @@ export type MigrationResult = z.infer<typeof MigrationResultZod>
  * Converts between Firestore Timestamp and JavaScript Date objects
  * Validates data structure with Zod
  */
-export const migrationConverter: FirestoreDataConverter<z.infer<typeof MigrationResultZod>> = {
+export const migrationResultConverter: FirestoreDataConverter<z.infer<typeof MigrationResultZod>> = {
   fromFirestore(snapshot): z.infer<typeof MigrationResultZod> {
     return MigrationResultZod.parse(snapshot.data())
   },

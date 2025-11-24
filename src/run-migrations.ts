@@ -4,7 +4,7 @@ import { compare, gt, satisfies } from 'semver'
 
 import { getMigrationFiles } from './get-migration-files'
 import { createLogger, type LogLevelString } from './logger'
-import { migrationConverter } from './migration-converter'
+import { migrationResultConverter } from './migration-result-converter'
 import { proxyFirestore } from './proxy-firestore'
 import { runMigration } from './run-migration'
 import { type IStatistics } from './types'
@@ -19,7 +19,7 @@ export type MigrateProps = {
 }
 
 export const runMigratations = async ({
-  path: dir,
+  path: migrationPath,
   collection = 'fireway',
   dryRun = false,
   logLevel = 'log',
@@ -33,7 +33,7 @@ export const runMigratations = async ({
   const firestore = getFirestore(app)
 
   logger.log(`Running @valian/fireway migrations for projectId: ${projectId ?? ''}`)
-  const files = getMigrationFiles(dir)
+  const files = getMigrationFiles(migrationPath)
 
   const stats: IStatistics = {
     scannedFiles: files.length,
@@ -46,10 +46,12 @@ export const runMigratations = async ({
   }
 
   if (stats.scannedFiles === 0) {
-    logger.log(`No migration files found at "${dir}".`)
+    logger.log(`No migration files found at "${migrationPath}".`)
     return stats
   }
-  logger.debug(`Found ${stats.scannedFiles} migration file${stats.scannedFiles === 1 ? '' : 's'} at "${dir}".`)
+  logger.debug(
+    `Found ${stats.scannedFiles} migration file${stats.scannedFiles === 1 ? '' : 's'} at "${migrationPath}".`,
+  )
 
   // Always apply the proxy to track statistics
   // In dryRun mode, it will also prevent actual writes
@@ -60,7 +62,7 @@ export const runMigratations = async ({
   // Get the latest migration
   const result = await firestore
     .collection(collection)
-    .withConverter(migrationConverter)
+    .withConverter(migrationResultConverter)
     .orderBy('installed_rank', 'desc')
     .limit(1)
     .get()
@@ -76,7 +78,7 @@ export const runMigratations = async ({
           // run only files with greater version
           gt(file.version, latestVersion) ||
           // or if the latest is failed, we are going to re-run the script
-          (!latest.success && satisfies(file.version, latestVersion))
+          (!latest.success && satisfies(file.version, latestVersion)),
       )
     : [...files]
 
@@ -98,6 +100,7 @@ export const runMigratations = async ({
 
     // eslint-disable-next-line no-await-in-loop
     const migrationResult = await runMigration({
+      path: migrationPath,
       logger,
       app,
       firestore: proxyFirestore(firestore, logger, stats, dryRun),
@@ -111,7 +114,7 @@ export const runMigratations = async ({
       // eslint-disable-next-line no-await-in-loop
       await firestore
         .collection(collection)
-        .withConverter(migrationConverter)
+        .withConverter(migrationResultConverter)
         .doc(`v${file.version}__${file.description}`)
         .set(migrationResult)
     }
@@ -134,7 +137,7 @@ export const runMigratations = async ({
   // Get the latest migration after migrations
   const resultAfterMigrations = await firestore
     .collection(collection)
-    .withConverter(migrationConverter)
+    .withConverter(migrationResultConverter)
     .orderBy('installed_rank', 'desc')
     .limit(1)
     .get()

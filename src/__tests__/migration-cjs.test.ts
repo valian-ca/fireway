@@ -1,24 +1,19 @@
 import { consola } from 'consola'
-import { initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
+import { type App, initializeApp } from 'firebase-admin/app'
+import { type DocumentData, type Firestore, getFirestore, Timestamp } from 'firebase-admin/firestore'
 import functionsTest from 'firebase-functions-test'
 import { nanoid } from 'nanoid'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { runMigratations } from '../run-migrations'
 
-let app
-let firestore
+let app: App
+let firestore: Firestore
 
 const testHelper = functionsTest()
 
-beforeEach(async () => {
-  // // Clear the terminal tracking
-  // terminal.reset();
-
-  const name = nanoid()
-
-  app = initializeApp({ projectId: `demo-fireway` }, name)
+beforeEach(() => {
+  app = initializeApp({ projectId: `demo-fireway` }, nanoid())
   firestore = getFirestore(app)
 })
 
@@ -32,39 +27,33 @@ beforeEach(() => {
 
 afterEach(() => testHelper.firestore.clearFirestoreData({ projectId: `demo-fireway` }))
 
-afterEach(async () => {
+afterEach(() => {
   testHelper.cleanup()
 })
 
-async function assertData(path, value) {
+const documentData = async <T = DocumentData>(path: string): Promise<T> => {
   const ref = await firestore.doc(path).get()
   expect(ref.exists).toBe(true)
-  const data = ref.data()
-
-  if (value.execution_time) {
-    expect('execution_time' in data).toBe(true)
-    expect(typeof data.execution_time).toBe('number')
-    delete data.execution_time
-    delete value.execution_time
-  }
-
-  if (value.installed_on) {
-    expect('installed_on' in data).toBe(true)
-    expect('seconds' in data.installed_on).toBe(true)
-    expect('nanoseconds' in data.installed_on).toBe(true)
-    delete data.installed_on
-    delete value.installed_on
-  }
-
-  if (value.installed_by) {
-    expect('installed_by' in data).toBe(true)
-    expect(typeof data.installed_by).toBe('string')
-    delete data.installed_by
-    delete value.installed_by
-  }
-
-  expect(data).toEqual(value)
+  return ref.data() as T
 }
+
+// async function assertData(path: string, expectedData: Record<string, unknown>) {
+//   const ref = await firestore.doc(path).get()
+//   expect(ref.exists).toBe(true)
+
+//   // Use toMatchSnapshot with matchers, snapshot name will be auto-generated
+//   expect(ref.data()).toMatchSnapshot({
+//     execution_time: expect.any(Number),
+//     installed_on: expect.any(Object),
+//     installed_by: expect.any(String),
+//   })
+
+//   // Verify the expected data matches
+//   const data = ref.data()
+//   for (const [key, value] of Object.entries(expectedData)) {
+//     expect(data?.[key]).toEqual(value)
+//   }
+// }
 
 describe('merge: iterative', () => {
   it('should run iterative migrations', async () => {
@@ -72,7 +61,6 @@ describe('merge: iterative', () => {
     const stats0 = await runMigratations({
       path: `${import.meta.dirname}/fixtures/emptyMigration`,
       app,
-      firestore,
     })
     let snapshot = await firestore.collection('fireway').get()
     expect(snapshot.size).toBe(0)
@@ -81,7 +69,6 @@ describe('merge: iterative', () => {
     const stats1 = await runMigratations({
       path: `${import.meta.dirname}/fixtures/oneMigration`,
       app,
-      firestore,
     })
     snapshot = await firestore.collection('fireway').get()
     let dataSnapshot = await firestore.collection('data').get()
@@ -89,27 +76,33 @@ describe('merge: iterative', () => {
     expect(dataSnapshot.size).toBe(1)
     const [m1doc1] = dataSnapshot.docs
     expect(m1doc1.data()).toEqual({ key: 'value' })
-    await assertData('fireway/v0.0.0__first', {
-      checksum: '3a29bfbd4a83273c613ca3d9bf40e549',
-      description: 'first',
-      execution_time: 251,
-      installed_by: 'len',
-      installed_on: {
-        seconds: 1_564_681_117,
-        nanoseconds: 401_000_000,
+
+    expect(await documentData('fireway/v0.0.0__first')).toMatchInlineSnapshot(
+      {
+        execution_time: expect.any(Number),
+        installed_on: expect.any(Timestamp),
+        installed_by: expect.any(String),
       },
-      installed_rank: 0,
-      script: 'v0__first.js',
-      success: true,
-      type: 'js',
-      version: '0.0.0',
-    })
+      `
+      {
+        "checksum": "f8fa4bf33c820a3049f6948ca8efd38908f5b8a8ef95a79f869fdba95ea8f60d",
+        "description": "first",
+        "execution_time": Any<Number>,
+        "installed_by": Any<String>,
+        "installed_on": Any<Timestamp>,
+        "installed_rank": 0,
+        "script": "v0__first.cjs",
+        "success": true,
+        "type": "cjs",
+        "version": "0.0.0",
+      }
+    `,
+    )
 
     // Second migration
     const stats2 = await runMigratations({
       path: `${import.meta.dirname}/fixtures/iterativeMigration`,
       app,
-      firestore,
     })
     snapshot = await firestore.collection('fireway').get()
     dataSnapshot = await firestore.collection('data').get()
@@ -118,21 +111,28 @@ describe('merge: iterative', () => {
     const [m2doc1, m2doc2] = dataSnapshot.docs
     expect(m2doc1.data()).toEqual({ key: 'value' })
     expect(m2doc2.data()).toEqual({ key: 'value' })
-    await assertData('fireway/v0.1.0__second', {
-      checksum: '95031069f80997d046b3cf405af9b524',
-      description: 'second',
-      execution_time: 251,
-      installed_by: 'len',
-      installed_on: {
-        seconds: 1_564_681_117,
-        nanoseconds: 401_000_000,
+
+    expect(await documentData('fireway/v0.1.0__second')).toMatchInlineSnapshot(
+      {
+        execution_time: expect.any(Number),
+        installed_on: expect.any(Timestamp),
+        installed_by: expect.any(String),
       },
-      installed_rank: 1,
-      script: 'v0.1__second.js',
-      success: true,
-      type: 'js',
-      version: '0.1.0',
-    })
+      `
+      {
+        "checksum": "ac8babd85f1e73ca5c39d154a9f75ccd1aaf5153adea71e506c3c981fd187f84",
+        "description": "second",
+        "execution_time": Any<Number>,
+        "installed_by": Any<String>,
+        "installed_on": Any<Timestamp>,
+        "installed_rank": 1,
+        "script": "v0.1__second.mjs",
+        "success": true,
+        "type": "mjs",
+        "version": "0.1.0",
+      }
+    `,
+    )
 
     expect(stats0).toEqual({
       scannedFiles: 0,
@@ -171,27 +171,32 @@ describe('merge: error iterative', () => {
       await runMigratations({
         path: `${import.meta.dirname}/fixtures/errorMigration`,
         app,
-        firestore,
       })
     } catch {
       errorThrown = true
       const snapshot = await firestore.collection('fireway').get()
       expect(snapshot.size).toBe(1)
-      await assertData('fireway/v0.0.0__error', {
-        checksum: '82c81f69f2c5276ef1eefff58c62ce5a',
-        description: 'error',
-        execution_time: 251,
-        installed_by: 'len',
-        installed_on: {
-          seconds: 1_564_681_117,
-          nanoseconds: 401_000_000,
+      expect(await documentData('fireway/v0.0.0__error')).toMatchInlineSnapshot(
+        {
+          execution_time: expect.any(Number),
+          installed_on: expect.any(Timestamp),
+          installed_by: expect.any(String),
         },
-        installed_rank: 0,
-        script: 'v0__error.js',
-        success: false,
-        type: 'js',
-        version: '0.0.0',
-      })
+        `
+        {
+          "checksum": "c69abad14c75916339062459b41c3925cd1bc1b5209c9d18c707fca9853c6639",
+          "description": "error",
+          "execution_time": Any<Number>,
+          "installed_by": Any<String>,
+          "installed_on": Any<Timestamp>,
+          "installed_rank": 0,
+          "script": "v0__error.cjs",
+          "success": false,
+          "type": "cjs",
+          "version": "0.0.0",
+        }
+      `,
+      )
     }
     expect(errorThrown).toBe(true)
 
@@ -200,7 +205,6 @@ describe('merge: error iterative', () => {
       await runMigratations({
         path: `${import.meta.dirname}/fixtures/errorIterativeMigration`,
         app,
-        firestore,
       })
     } catch {
       errorThrown = true
@@ -215,23 +219,17 @@ describe('merge: error iterative', () => {
 
 describe('dryRun', () => {
   it('should simulate changes without applying them', async () => {
+    await runMigratations({
+      dryRun: true,
+      path: `${import.meta.dirname}/fixtures/oneMigration`,
+      app,
+    })
+
     const snapshot = await firestore.collection('fireway').get()
     const dataSnapshot = await firestore.collection('data').get()
 
     expect(snapshot.size).toBe(0)
     expect(dataSnapshot.size).toBe(0)
-
-    await runMigratations({
-      dryRun: true,
-      path: `${import.meta.dirname}/fixtures/oneMigration`,
-      app,
-      firestore,
-    })
-
-    const snapshot2 = await firestore.collection('fireway').get()
-    const dataSnapshot2 = await firestore.collection('data').get()
-    expect(snapshot2.size).toBe(0)
-    expect(dataSnapshot2.size).toBe(0)
   })
 })
 
@@ -240,7 +238,6 @@ describe('dryRun: delete', () => {
     await runMigratations({
       path: `${import.meta.dirname}/fixtures/oneMigration`,
       app,
-      firestore,
     })
 
     let snapshot = await firestore.collection('fireway').get()
@@ -252,7 +249,6 @@ describe('dryRun: delete', () => {
       dryRun: true,
       path: `${import.meta.dirname}/fixtures/deleteMigration`,
       app,
-      firestore,
     })
 
     snapshot = await firestore.collection('fireway').get()
@@ -268,18 +264,16 @@ describe('invalid name', () => {
       runMigratations({
         path: `${import.meta.dirname}/fixtures/invalidNameMigration`,
         app,
-        firestore,
-      })
+      }),
     ).rejects.toThrow(/This filename doesn't match the required format.*/)
 
     try {
       await runMigratations({
         path: `${import.meta.dirname}/fixtures/invalidNameMigration`,
         app,
-        firestore,
       })
     } catch (error) {
-      expect(error.message).toMatch(/This filename doesn't match the required format.*/)
+      expect((error as Error).message).toMatch(/This filename doesn't match the required format.*/)
       const snapshot = await firestore.collection('fireway').get()
       expect(snapshot.size).toBe(0)
     }
@@ -291,7 +285,6 @@ describe('batch: migration count', () => {
     const stats = await runMigratations({
       path: `${import.meta.dirname}/fixtures/batchMigration`,
       app,
-      firestore,
     })
 
     const snapshot = await firestore.collection('fireway').get()
@@ -315,7 +308,6 @@ describe('all methods', () => {
     const stats = await runMigratations({
       path: `${import.meta.dirname}/fixtures/allMethodMigration`,
       app,
-      firestore,
     })
 
     const snapshot = await firestore.collection('fireway').get()
@@ -344,14 +336,13 @@ describe('Delete a field', () => {
     await runMigratations({
       path: `${import.meta.dirname}/fixtures/deleteFieldMigration`,
       app,
-      firestore,
     })
 
     const snapshot = await firestore.collection('fireway').get()
     const dataSnapshot = await firestore.collection('data').get()
     expect(snapshot.size).toBe(1)
     expect(dataSnapshot.size).toBe(1)
-    await assertData('data/doc', {
+    await expect(documentData('data/doc')).resolves.toEqual({
       field2: 'field2',
     })
   })
@@ -362,7 +353,6 @@ describe('TypeScript', () => {
     const stats = await runMigratations({
       path: `${import.meta.dirname}/fixtures/tsMigration`,
       app,
-      firestore,
     })
 
     const snapshot = await firestore.collection('fireway').get()
@@ -378,21 +368,26 @@ describe('TypeScript', () => {
       deleted: 0,
       added: 0,
     })
-
-    await assertData('fireway/v0.0.0__first', {
-      checksum: '542faba96904b63068c101daeefa2c3e',
-      description: 'first',
-      execution_time: 251,
-      installed_by: 'len',
-      installed_on: {
-        seconds: 1_564_681_117,
-        nanoseconds: 401_000_000,
+    expect(await documentData('fireway/v0.0.0__first')).toMatchInlineSnapshot(
+      {
+        execution_time: expect.any(Number),
+        installed_on: expect.any(Timestamp),
+        installed_by: expect.any(String),
       },
-      installed_rank: 0,
-      script: 'v0__first.ts',
-      success: true,
-      type: 'ts',
-      version: '0.0.0',
-    })
+      `
+      {
+        "checksum": "d5cd4570cd3242faff7b70aa6f164c29209757d7f13f886b447e0945170a8aac",
+        "description": "first",
+        "execution_time": Any<Number>,
+        "installed_by": Any<String>,
+        "installed_on": Any<Timestamp>,
+        "installed_rank": 0,
+        "script": "v0__first.ts",
+        "success": true,
+        "type": "ts",
+        "version": "0.0.0",
+      }
+    `,
+    )
   })
 })
