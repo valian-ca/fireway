@@ -73,7 +73,7 @@
   "devDependencies": {
     "@commitlint/cli": "20.3.1",
     "@commitlint/config-conventional": "20.3.1",
-    "@tsconfig/node24": "24.0.0",
+    "@tsconfig/node24": "24.0.3",
     "@types/node": "24.10.9",
     "@types/semver": "7.7.1",
     "@valian/eslint-config": "2.1.0",
