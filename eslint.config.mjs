@@ -19,6 +19,8 @@ export default defineConfig([
     rules: {
       'unicorn/filename-case': 'off',
       'unicorn/no-empty-file': 'off',
+
+      'vitest/no-conditional-expect': 'off',
     },
   },
 ])
